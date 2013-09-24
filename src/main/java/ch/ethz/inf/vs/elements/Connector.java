@@ -53,6 +53,7 @@ public interface Connector {
 	 */
 	public void setRawDataReceiver(RawDataChannel receiver);
 	
+	
 	/**
 	 * Gets the address of this connector.
 	 *

@@ -1,9 +1,11 @@
 package ch.ethz.inf.vs.elements;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * ConnectorBase is a partial implementation of a {@link Connector}. It connects
@@ -17,10 +19,16 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public abstract class ConnectorBase implements Connector {
 	
+	/** The Logger. */
+	private final static Logger LOGGER = Logger.getLogger(ConnectorBase.class.toString());
+
 	/** The local address. */
-	private final EndpointAddress localAddr;
+	private final InetSocketAddress localAddr;
 	
+	/** The thread that receives messages */
 	private Thread receiverThread;
+	
+	/** The thread that sends messages */
 	private Thread senderThread;
 
 	/** The queue of outgoing block (for sending). */
@@ -37,12 +45,12 @@ public abstract class ConnectorBase implements Connector {
 	 *
 	 * @param address the address to listen to
 	 */
-	public ConnectorBase(EndpointAddress address) {
+	public ConnectorBase(InetSocketAddress address) {
 		if (address == null)
 			throw new NullPointerException();
 		this.localAddr = address;
 
-		// TODO: optionally define maximal capacity
+		// Optionally define maximal capacity
 		this.outgoing = new LinkedBlockingQueue<RawData>();
 	}
 	
@@ -54,38 +62,52 @@ public abstract class ConnectorBase implements Connector {
 	public abstract String getName();
 	
 	/**
-	 * Blocking method. Waits until a message comes from the network. New
-	 * messages should be wrapped into a {@link RawData} object and
-	 * {@link #forwardIncoming(RawData)} should be called to forward it to the
-	 * {@link RawDataChannel2}. // TODO: changes
-	 * 
 	 * @throws Exception
 	 *             any exceptions that should be properly logged
 	 */
 	protected abstract RawData receiveNext() throws Exception;
 	
 	/**
-	 * Blocking method. Waits until a new message should be sent over the
-	 * network. //TODO: changed
-	 * 
 	 * @throws Exception any exception that should be properly logged
 	 */
 	protected abstract void sendNext(RawData raw) throws Exception;
 	
+	
+	/**
+	 * Gets the receiver thread count.
+	 *
+	 * @return the receiver thread count
+	 */
 	protected int getReceiverThreadCount() {
 		return 1;
 	}
 	
+	/**
+	 * Gets the sender thread count.
+	 *
+	 * @return the sender thread count
+	 */
 	protected int getSenderThreadCount() {
 		return 1;
 	}
 	
+	/**
+	 * Receive next message from network and forward them to the receiver.
+	 *
+	 * @throws Exception any exception that occurs
+	 */
 	private void receiveNextMessageFromNetwork() throws Exception {
 		RawData raw = receiveNext();
 		if (raw != null)
 			receiver.receiveData(raw);
 	}
 	
+	/**
+	 * Get the next message from the outgoing queue and send it over the
+	 * network.
+	 * 
+	 * @throws Exception the exception
+	 */
 	private void sendNextMessageOverNetwork() throws Exception {
 		RawData raw = outgoing.take(); // Blocking
 		if (raw == null)
@@ -101,17 +123,15 @@ public abstract class ConnectorBase implements Connector {
 		if (running) return;
 		running = true;
 
-		//int senderCount = getSenderThreadCount();
-		//int receiverCount = getReceiverThreadCount();
-		//LOGGER.fine(getName()+"-connector starts "+senderCount+" sender threads and "+receiverCount+" receiver threads");
+		int senderCount = getSenderThreadCount();
+		int receiverCount = getReceiverThreadCount();
+		LOGGER.fine(getName()+"-connector starts "+senderCount+" sender threads and "+receiverCount+" receiver threads");
 		
 		senderThread = new Worker(getName()+"-Sender"+localAddr) {
-				public void prepare() { prepareSending(); }
 				public void work() throws Exception { sendNextMessageOverNetwork(); }
 			};
 
 		receiverThread = new Worker(getName()+"-Receiver"+localAddr) {
-				public void prepare() { prepareReceiving(); }
 				public void work() throws Exception { receiveNextMessageFromNetwork(); }
 			};
 		
@@ -131,10 +151,12 @@ public abstract class ConnectorBase implements Connector {
 		outgoing.clear();
 	}
 
-	/* (non-Javadoc)
-	 * @see ch.inf.vs.californium.network.connector.Connector#destroy()
+	/**
+	 * Stops the connector and cleans up any leftovers. A destroyed connector
+	 * cannot be expected to be able to start again. Note that this does not
+	 * call stop() but the subclass has to do that if required.
 	 */
-	@Override // TODO: Note that this does not call stop but the subclass has to do
+	@Override
 	public synchronized void destroy() { }
 
 	/* (non-Javadoc)
@@ -145,13 +167,6 @@ public abstract class ConnectorBase implements Connector {
 		if (msg == null)
 			throw new NullPointerException();
 		outgoing.add(msg);
-		// TODO is it better not to switch the thread?
-		// Careful: Buffer might not be used thread-safe
-//		try {
-//			sendNext(msg);
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
 	}
 
 	/* (non-Javadoc)
@@ -161,9 +176,6 @@ public abstract class ConnectorBase implements Connector {
 	public void setRawDataReceiver(RawDataChannel receiver) {
 		this.receiver = receiver;
 	}
-	
-	public void prepareSending() {}
-	public void prepareReceiving() {}
 	
 	/**
 	 * Abstract worker thread that wraps calls to
@@ -180,8 +192,7 @@ public abstract class ConnectorBase implements Connector {
 		 */
 		private Worker(String name) {
 			super(name);
-			setDaemon(false);
-//			setDaemon(true); // TODO: smart?
+			setDaemon(false); // TODO: smart?
 		}
 
 		/* (non-Javadoc)
@@ -189,20 +200,19 @@ public abstract class ConnectorBase implements Connector {
 		 */
 		public void run() {
 			try {
-				//LOGGER.info("Start "+getName()+", (running = "+running+")");
-				prepare();
+				LOGGER.info("Start "+getName()+", (running = "+running+")");
 				while (running) {
 					try {
 						work();
 					} catch (Throwable t) {
-						//if (running)
-							//LOGGER.log(Level.WARNING, "Exception \""+t+"\" in thread " + getName()+": running="+running, t);
-						//else
-							//LOGGER.info("Exception \""+t+"\" in thread " + getName()+" has successfully stopped socket thread");
+						if (running)
+							LOGGER.log(Level.WARNING, "Exception \""+t+"\" in thread " + getName()+": running="+running, t);
+						else
+							LOGGER.info("Exception \""+t+"\" in thread " + getName()+" has successfully stopped socket thread");
 					}
 				}
 			} finally {
-				//LOGGER.info(getName()+" has terminated (running = "+running+")");
+				LOGGER.info(getName()+" has terminated (running = "+running+")");
 			}
 		}
 
@@ -213,7 +223,6 @@ public abstract class ConnectorBase implements Connector {
 		 * @throws Exception the exception to be properly logged
 		 */
 		protected abstract void work() throws Exception;
-		protected abstract void prepare();
 	}
 
 	/**
@@ -221,7 +230,7 @@ public abstract class ConnectorBase implements Connector {
 	 *
 	 * @return the local address
 	 */
-	public EndpointAddress getLocalAddr() {
+	public InetSocketAddress getLocalAddr() {
 		return localAddr;
 	}
 	
@@ -233,7 +242,7 @@ public abstract class ConnectorBase implements Connector {
 	public RawDataChannel getReceiver() {
 		return receiver;
 	}
-	
+
 	/**
 	 * Sets the receiver for incoming messages.
 	 *
@@ -242,7 +251,7 @@ public abstract class ConnectorBase implements Connector {
 	public void setReceiver(RawDataChannel receiver) {
 		this.receiver = receiver;
 	}
-	
+
 	/**
 	 * Checks the connector has started but not stopped yet.
 	 *
@@ -251,5 +260,4 @@ public abstract class ConnectorBase implements Connector {
 	public boolean isRunning() {
 		return running;
 	}
-	
 }
