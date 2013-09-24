@@ -20,9 +20,6 @@ public class RawData {
 	/** The port. */
 	private int port;
 	
-	// TODO: remove
-	private RawData() { }
-	
 	/**
 	 * Instantiates a new raw data.
 	 *
