@@ -1,6 +1,8 @@
 
 package ch.ethz.inf.vs.elements;
 
+import org.omg.CORBA.Request;
+
 /**
  * This is the interface needed between a CoAP stack and a connector. The
  * connector forwards raw data to the method receiveData() and the CoAP stack
