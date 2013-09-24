@@ -2,6 +2,7 @@
 package ch.ethz.inf.vs.elements;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /**
  * A connector connects a server to the network. A connector might listen on a
@@ -51,4 +52,11 @@ public interface Connector {
 	 * @param receiver the new raw data receiver
 	 */
 	public void setRawDataReceiver(RawDataChannel receiver);
+	
+	/**
+	 * Gets the address of this connector.
+	 *
+	 * @return the address
+	 */
+	public InetSocketAddress getAddress();
 }
