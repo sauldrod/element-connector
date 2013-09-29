@@ -11,14 +11,16 @@ import java.net.InetSocketAddress;
 public class RawData {
 
 	/** The serialized message. */
-	// TODO: make private final again;
-	public byte[] bytes;
+	public final byte[] bytes;
 	
 	/** The address. */
 	private InetAddress address;
 	
 	/** The port. */
 	private int port;
+	
+	/** Indicates if this message was a multicast message */
+	private boolean multicast;
 	
 	/**
 	 * Instantiates a new raw data.
@@ -97,13 +99,31 @@ public class RawData {
 	public void setPort(int port) {
 		this.port = port;
 	}
+
+	/**
+	 * Checks if this is a multicast message
+	 *
+	 * @return true, if this is a multicast message
+	 */
+	public boolean isMulticast() {
+		return multicast;
+	}
+
+	/**
+	 * Marks this message as a multicast message.
+	 *
+	 * @param multicast whether this message is a multicast message
+	 */
+	public void setMulticast(boolean multicast) {
+		this.multicast = multicast;
+	}
 	
 	/**
-	 * Gets the address as {@link EndpointAddress}.
+	 * Gets the address as {@link InetSocketAddress}.
 	 *
 	 * @return the endpoint address
 	 */
-	public InetSocketAddress getEndpointAddress() {
+	public InetSocketAddress getInetSocketAddress() {
 		return new InetSocketAddress(address, port);
 	}
 }
