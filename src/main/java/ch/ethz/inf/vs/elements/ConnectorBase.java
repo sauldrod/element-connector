@@ -54,6 +54,10 @@ public abstract class ConnectorBase implements Connector {
 		this.outgoing = new LinkedBlockingQueue<RawData>();
 	}
 	
+	public InetSocketAddress getAddress() {
+		return localAddr;
+	}
+	
 	/**
 	 * Gets the name of the connector, e.g. the transport protocol used such as UDP or DTlS.
 	 *
