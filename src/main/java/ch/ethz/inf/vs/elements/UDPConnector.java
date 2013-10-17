@@ -13,6 +13,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.xml.ws.Endpoint;
+
 /**
  * The UDPConnector connects a server to the network using the UDP protocol. The
  * <code>UDPConnector</code> is bound to an {@link Endpoint} by a
@@ -76,7 +78,7 @@ public class UDPConnector implements Connector {
 		sendBuffer = socket.getSendBufferSize();
 		
 		// start receiver and sender threads
-		LOGGER.fine("UDP-connector starts "+senderCount+" sender threads and "+receiverCount+" receiver threads");
+		LOGGER.config("UDP-connector starts "+senderCount+" sender threads and "+receiverCount+" receiver threads");
 		
 		receiverThreads = new LinkedList<Thread>();
 		for (int i=0;i<receiverCount;i++) {
@@ -92,13 +94,16 @@ public class UDPConnector implements Connector {
 			t.start();
 		for (Thread t:senderThreads)
 			t.start();
+		
 		/*
 		 * Java bug: sometimes, socket.getReceiveBufferSize() and
 		 * socket.setSendBufferSize() block forever when called here. When
 		 * called up there, it seems to work. This issue occurred in Java
 		 * 1.7.0_09, Windows 7.
 		 */
-		LOGGER.info("UDP connector listening on "+socket.getLocalSocketAddress()+", recv buf = "+receiveBuffer+", send buf = "+sendBuffer);
+		
+		LOGGER.config("UDP connector listening on "+socket.getLocalSocketAddress()+", recv buf = "+receiveBuffer+", send buf = "+sendBuffer
+				+", recv packet size = " +receiverPacketSize+  ", log packets = "+logPackets);
 	}
 
 	@Override
@@ -106,10 +111,12 @@ public class UDPConnector implements Connector {
 		if (!running) return;
 		this.running = false;
 		// stop all threads
-		for (Thread t:senderThreads)
-			t.interrupt();
-		for (Thread t:receiverThreads)
-			t.interrupt();
+		if (senderThreads!= null)
+			for (Thread t:senderThreads)
+				t.interrupt();
+		if (receiverThreads!= null)
+			for (Thread t:receiverThreads)
+				t.interrupt();
 		outgoing.clear();
 		if (socket != null)
 			socket.close();
@@ -261,7 +268,7 @@ public class UDPConnector implements Connector {
 	}
 	
 	public void setLogPackets(boolean b) {
-		this.logPackets = true;
+		this.logPackets = b;
 	}
 	
 	public boolean isLogPackets() {

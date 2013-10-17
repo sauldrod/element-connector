@@ -1,6 +1,9 @@
 
 package ch.ethz.inf.vs.elements;
 
+import javax.xml.ws.Endpoint;
+import javax.xml.ws.Response;
+
 import org.omg.CORBA.Request;
 
 /**
