@@ -196,7 +196,7 @@ public abstract class ConnectorBase implements Connector {
 		 */
 		private Worker(String name) {
 			super(name);
-			setDaemon(false); // TODO: smart?
+			setDaemon(true);
 		}
 
 		/* (non-Javadoc)

@@ -26,8 +26,8 @@ import javax.xml.ws.Endpoint;
  */
 public class UDPConnector implements Connector {
 
-	private final static Logger LOGGER = Logger.getLogger(UDPConnector.class.toString());
-
+	public final static Logger LOGGER = Logger.getLogger(UDPConnector.class.toString());
+	
 	public static final int UNDEFINED = 0;
 	
 	private boolean running;
@@ -53,6 +53,10 @@ public class UDPConnector implements Connector {
 	
 	private int receiverPacketSize = 2048;
 	private boolean logPackets = false;
+	
+	public UDPConnector() {
+		this(new InetSocketAddress(0));
+	}
 	
 	public UDPConnector(InetSocketAddress address) {
 		this.localAddr = address;
@@ -154,7 +158,7 @@ public class UDPConnector implements Connector {
 		 */
 		private Worker(String name) {
 			super(name);
-			setDaemon(false);
+			setDaemon(true);
 		}
 
 		/* (non-Javadoc)
