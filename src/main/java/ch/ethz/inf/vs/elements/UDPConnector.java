@@ -68,10 +68,11 @@ public class UDPConnector implements Connector {
 	@Override
 	public synchronized void start() throws IOException {
 		if (running) return;
-		this.running = true;
 		
 		// if localAddr is null or port is 0, the system decides
 		socket = new DatagramSocket(localAddr.getPort(), localAddr.getAddress());
+
+		this.running = true;
 		
 		if (receiveBuffer != UNDEFINED)
 			socket.setReceiveBufferSize(receiveBuffer);
