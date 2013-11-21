@@ -87,12 +87,12 @@ public class UDPConnector implements Connector {
 		
 		receiverThreads = new LinkedList<Thread>();
 		for (int i=0;i<receiverCount;i++) {
-			receiverThreads.add(new Receiver("UDP-Receiver"+localAddr+"["+i+"]"));
+			receiverThreads.add(new Receiver("UDP-Receiver "+localAddr+"["+i+"]"));
 		}
 		
 		senderThreads = new LinkedList<Thread>();
 		for (int i=0;i<senderCount;i++) {
-			senderThreads.add(new Sender("UDP-Sender"+localAddr+"["+i+"]"));
+			senderThreads.add(new Sender("UDP-Sender "+localAddr+"["+i+"]"));
 		}
 
 		for (Thread t:receiverThreads)
@@ -166,7 +166,7 @@ public class UDPConnector implements Connector {
 		 * @see java.lang.Thread#run()
 		 */
 		public void run() {
-			LOGGER.info("Start "+getName());
+			LOGGER.config("Start "+getName());
 			while (running) {
 				try {
 					work();
